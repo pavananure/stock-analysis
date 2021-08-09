@@ -28,8 +28,10 @@ class ImportController
     {
         $fileName = '';
 
+        $imported = false;
         // if file size is not empty
         if (isset($_FILES['file']) && $_FILES['file']['size'] > 0) {
+            $imported = true;
             // reading tmp_file name
             $fileName = $_FILES['file']['tmp_name'];
 
@@ -39,8 +41,9 @@ class ImportController
             $arrayGroup = $this->group_by('1', $arrayFromCSV);
             unset($arrayGroup['stock_name']);
 
-            // echo '<pre>',print_r($arrayGroup),'</pre>';
-            // exit;
+            // Open a file in write mode ('w')
+            $error_filename = 'logs/error_log_' . date('d_m_Y') . '.csv';
+            $fp = fopen($error_filename, 'a');
 
             $results = [];
             $counter = 0;
@@ -58,6 +61,13 @@ class ImportController
                     $check_stock = $this->conn->query($check_stock_sql);
 
                     if ($check_stock->num_rows > 0) {
+                        fputcsv($fp, [
+                            '[' . date('d-m-Y H:i:s') . ']',
+                            $stocks[$ikey][0],
+                            $key,
+                            $stocks[$ikey][2],
+                            'error! duplicate record',
+                        ]);
                         continue;
                     } else {
                         // inserting values into the table
@@ -93,6 +103,8 @@ class ImportController
                     }
                 }
             }
+
+            fclose($fp);
 
             // inserting values into the table
             $insert_profit_sql =
@@ -130,6 +142,12 @@ class ImportController
             "' ORDER BY FIELD(stock_name, ''), profit_loss DESC";
         $select_profit = $this->conn->query($select_profit_sql);
         ?>
+         
+         <?php if ($imported) { ?>
+            <div style="text-align: center;background-color:#00e835;">Records Processed Successfully. Duplicate records excluded (<a href="/stock-analysis/logs/error_log_<?php echo date(
+                'd_m_Y'
+            ); ?>.csv" download>Download Error Log</a>)</div>
+         <?php } ?>
          
          <table class="table">
                  <thead>

@@ -46,23 +46,29 @@ $importCtrl = new ImportController($conn);
 						<div style="font-size:12px;color:red;text-align:center;">
 							Note: Default loads the data for current month
 						</div>
-						<span style="color:red">*</span>From Date: <input type = "text" id = "fromdate">
-						<span style="color:red">*</span>To Date: <input type = "text" id = "todate">
+						<span style="color:red">*</span>From Date: <input type = "text" id = "fromdate" style="width: 15%;">
+						<span style="color:red">*</span>To Date: <input type = "text" id = "todate" style="width: 15%;">
 						<span style="color:red">*</span>Stock Name:
-						<?php  $sel_stock_sql = "SELECT stock_name FROM stock_import GROUP BY stock_name";
-        					   $stocks = $conn->query($sel_stock_sql); ?>
-						<select style="width: 185px;padding: 4px;">
+						<?php
+      						$sel_stock_sql =
+          						'SELECT stock_name FROM stock_import GROUP BY stock_name';
+      						$stocks = $conn->query($sel_stock_sql);
+      					?>
+						<select id = "stock_name" style="width: 15%;padding: 4px;">
 							<option value="0">All</option>
 							<?php if ($stocks->num_rows > 0) {
            						// output data of each row
            						$count = 1;
-           							while ($row = $stocks->fetch_assoc()) { ?>
-                 						<option value="<?php echo $count; ?>"> <?php echo $row['stock_name']; ?> </td>
-            						<?php ++$count;}
-       							} ?>
+           						while ($row = $stocks->fetch_assoc()) { ?>
+                 					<option value="<?php echo $count; ?>"><?php echo $row[
+    								'stock_name'
+								]; ?></option>
+            					<?php ++$count;}
+       						} ?>
 						</select>
+						<button name="get_data" class="btn get_data" style="background-color: #0062cc; color: #ffffff;margin-bottom: 6px;margin-left: 10px;"> Get Data </button>
 					</div>
-					<div class="m-auto border shadow">
+					<div class="m-auto border shadow result-table">
 						<?php $importResult = $importCtrl->index(); ?>
 					</div>
 				</div>
@@ -84,6 +90,64 @@ $importCtrl = new ImportController($conn);
 			$( "#fromdate" ).datepicker({ dateFormat: 'dd-mm-yy' }).datepicker("setDate",firstDate);
             $( "#todate" ).datepicker({ dateFormat: 'dd-mm-yy' }).datepicker("setDate",lastDate);
          });
-      </script>
+
+		$(".get_data").click(function(e){
+			e.preventDefault();
+
+			var from_date_obj = $( "#fromdate" ).val().split("-");
+			var to_date_obj = $( "#todate" ).val().split("-");
+			var from_date = new Date(from_date_obj[2],parseInt(from_date_obj[1])-1,from_date_obj[0]);
+			var to_date = new Date(to_date_obj[2],parseInt(to_date_obj[1])-1,to_date_obj[0]);
+			
+			if(to_date >= from_date){
+				$.ajax({
+        			type:"GET",
+        			url:"getDataAjax.php",
+        			data:{'from_date': $( "#fromdate" ).val(), 'to_date': $( "#todate" ).val(), 'stock_name': $("#stock_name option:selected").text()},
+        			success:function (data) {
+        				//console.log(data);
+						$(".result-table").empty();
+						var str='<table class="table">\
+						<thead><th> Sl </th><th> Stock Name </th>\
+						<th> Buy Date </th><th> Buy Price </th>\
+						<th> Sell Date </th><th> Sell Price </th>\
+						<th> Profit/Loss </th></thead>';
+				
+						var json_data = JSON.parse(data);
+
+						if(json_data.length > 0){
+							for(var i=0;i<json_data.length;i++){
+								str = str + '<tr style="';
+
+            					if (parseInt(json_data[i]['profit_loss']) > 0) {
+                					str = str + 'background-color: #52ff69;';
+             					} else if (parseInt(json_data[i]['profit_loss']) < 0) {
+                					str = str + 'background-color: #ff4c43;';
+             					} else {
+                					str = str + 'background-color: #f0ff0c;';
+             					}
+								
+								str = str + '>';
+								
+								str = str + '<td>'+(1+i)+'</td><td>'+json_data[i]['stock_name']+'</td>\
+								<td>'+json_data[i]['buy_date']+'</td>\
+								<td>'+json_data[i]['buy_price']+'</td>\
+								<td>'+json_data[i]['sell_date']+'</td>\
+								<td>'+json_data[i]['sell_price']+'</td>\
+								<td>'+json_data[i]['profit_loss']+'</td>';
+							}
+						} else {
+							str = str + '<tr><td  colspan="7" style="text-align: center;"> No Records Found... </td></tr>';
+						}
+					
+						str = str + '</table>';
+						$(".result-table").append(str);
+        			}
+    	 		});
+			} else {
+				alert('To date should be greater than from date');
+			}
+		});
+    </script>
 </body>
 </html>
