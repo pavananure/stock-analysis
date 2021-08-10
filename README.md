@@ -17,13 +17,13 @@ Step 5: Import the CSV sample from "data/sample_stock_price_sorted.csv"
 
 
 Run Tests:
-Example 1: run the command "./vendor/bin/phpunit --bootstrap vendor/autoload.php UnitTestFiles/Test/ImportTest.php"
+Example 1: run the command "./vendor/bin/phpunit --bootstrap vendor/autoload.php UnitTestFiles/Test/ImportCsvTest.php"
 
 Test Result:
 PHPUnit 7.5.20 by Sebastian Bergmann and contributors.
 
-.                                                                   1 / 1 (100%)
+.....................                                             21 / 21 (100%)
 
-Time: 224 ms, Memory: 4.00 MB
+Time: 92 ms, Memory: 4.00 MB
 
-OK (1 test, 1 assertion)
+OK (21 tests, 63 assertions)
